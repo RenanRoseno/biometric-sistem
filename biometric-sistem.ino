@@ -3,13 +3,15 @@
 #include <time.h>
 
 // set the LCD number of columns and rows
-const char* ssid = "HotnetNayane";
-const char* password = "@.NR1402";
+const char* ssid = "--";
+const char* password = "--";
 int timezone = -3; //time offset
 int dst = 0;
 
 int lcdColumns = 16;
 int lcdRows = 2;
+
+bool isBeforeEvening = false;
 
 // set LCD address, number of columns and rows
 // if you don't know your display address, run an I2C scanner sketch
@@ -41,8 +43,31 @@ void loop(){
 }
 
 void initLCD(){
+  time_t now;
+  struct tm * timeinfo;
+  time(&now);
+  timeinfo = localtime(&now);
   lcd.setCursor(0, 0);
-  lcd.print("F diugodiugo :( ");
+  lcd.print("LEITOR BIOMETRICO");
+  char saudacao[] = "";
+  lcd.setCursor(0, 1);
+  
+  if(timeinfo->tm_hour > 12){
+    lcd.print("Boa tarde");
+    isBeforeEvening = true;
+  }else {
+    if(isBeforeEvening){
+      lcd.clear();
+     isBeforeEvening = false;
+    }
+    lcd.print("Bom dia");   
+  }
+
+  lcd.setCursor(0, 2);
+  lcd.printf("%02d:%02d:%02d", timeinfo->tm_hour, 
+           timeinfo->tm_min, timeinfo->tm_sec); 
+   
+ 
 }
 
 void clearLCD(){
