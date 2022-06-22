@@ -74,6 +74,7 @@ void setup(){
 
 void loop(){
   initLCD();
+  menu();
   //showTime();
   //showKeyPressed();
   /*
@@ -129,7 +130,7 @@ void initLCD(){
   char saudacao[] = "";
   lcd.setCursor(0, 1);
   
-  if(timeinfo->tm_hour > 12){
+  if(timeinfo->tm_hour > 11){
     lcd.print("Boa tarde! ");
     isBeforeEvening = true;
   }else {
@@ -139,14 +140,41 @@ void initLCD(){
     }
       lcd.print("  Bom dia! ");   
   }
-
-  //lcd.setCursor(0, 2);
+  
   lcd.printf("%02d:%02d:%02d", timeinfo->tm_hour, 
            timeinfo->tm_min, timeinfo->tm_sec); 
-   
- 
+  lcd.setCursor(0, 2);
+  lcd.print("1.Verificar, 2.Criar");
 }
 
+void menu(){
+  boolean isDigitado = true;
+  do{
+    char keyPressed = myKeypad.getKey();
+    if(keyPressed != NULL){
+    isDigitado = false;
+    //Serial.println(keyPressed);
+    selectOption(keyPressed);
+    }
+  }while(isDigitado);
+}
+void selectOption(char option){
+  
+  //char myKey = myKeypad.getKey();
+  int op = option - '0'; 
+  Serial.println(op);
+  switch(op){
+    case 1 :
+    Serial.println("Verificar");
+    break;
+    case 2:
+    Serial.println("Cadastrar");
+    break;
+    defaultM:
+    Serial.println("Deafult");
+    break;
+  }
+}
 void clearLCD(){
    lcd.clear(); 
 }
