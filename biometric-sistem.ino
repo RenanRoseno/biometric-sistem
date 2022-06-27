@@ -126,7 +126,7 @@ void initLCD(){
   time(&now);
   timeinfo = localtime(&now);
   lcd.setCursor(0, 0);
-  lcd.print("  LEITOR BIOMETRICO");
+  lcd.print(" LEITOR BIOMETRICO");
   char saudacao[] = "";
   lcd.setCursor(0, 1);
   
@@ -141,8 +141,8 @@ void initLCD(){
       lcd.print("  Bom dia! ");   
   }
   
-  lcd.printf("%02d:%02d:%02d", timeinfo->tm_hour, 
-           timeinfo->tm_min, timeinfo->tm_sec); 
+  lcd.printf("%02d:%02d", timeinfo->tm_hour, 
+           timeinfo->tm_min); 
   lcd.setCursor(0, 2);
   lcd.print("1.Verificar, 2.Criar");
 }
@@ -156,6 +156,7 @@ void menu(){
     //Serial.println(keyPressed);
     selectOption(keyPressed);
     }
+    initLCD();
   }while(isDigitado);
 }
 void selectOption(char option){
@@ -165,15 +166,67 @@ void selectOption(char option){
   Serial.println(op);
   switch(op){
     case 1 :
+    checkFingerprint();
     Serial.println("Verificar");
     break;
     case 2:
+    senhaManual(false);
     Serial.println("Cadastrar");
     break;
-    defaultM:
-    Serial.println("Deafult");
+    default:
+    senhaManual(true);
     break;
   }
+}
+
+void senhaManual(boolean entra){
+  lcd.clear();
+  lcd.setCursor(0, 1);
+  lcd.print("Digite a senha:");
+  //boolean isDigitado = true;
+  
+  
+  String senha = "";
+  boolean valida = true;
+  while(valida){
+  char myKey = myKeypad.getKey();
+  if (myKey != NULL){
+    if(senha.length() == 3){
+      if(senha == "369"){
+        entrar(entra);
+      } else {
+        senhaInvalida();
+      }
+      valida = false;
+    } else if (senha.length() < 3){
+     
+   senha += String(myKey);
+   lcd.print("*"); 
+    }
+  }
+  }
+}
+
+void entrar(boolean entrar){
+  if(entrar){
+    lcd.clear();
+  lcd.setCursor(0, 0);
+  
+  lcd.print("Seja Bem vindo!!");
+  delay(5000);
+  initLCD();
+    } else {
+    storeFingerprint();      
+    }
+  
+}
+
+void senhaInvalida(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Senha Invalida");
+  delay(3000);
+  initLCD();
 }
 void clearLCD(){
    lcd.clear(); 
@@ -210,23 +263,41 @@ void showKeyPressed(){
 }
 void storeFingerprint()
 {
-  Serial.println(F("Qual a posição para guardar a digital? (1 a 149)"));
-
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Qual a posicao para guardar a digital? (1 a 149)");
+  
+  boolean valido = true;
+  int op = 0;
+  while(valido){
+    char myKey = myKeypad.getKey();
+ 
+    if (myKey != NULL){
+      op = myKey - '0';
+      Serial.print(op);
+      if(op > 0 && op < 10){
+        valido = false;
+      }
+    }
+  }
+  
+  lcd.clear();
+  lcd.setCursor(0,0);
   //Lê o que foi digitado no monitor serial
  // String strLocation = getCommand();
 
   //Transforma em inteiro
-  int location = 1; //strLocation.toInt();
+  int location = op; //strLocation.toInt();
 
   //Verifica se a posição é válida ou não
   if(location < 1 || location > 149)
   {
     //Se chegou aqui a posição digitada é inválida, então abortamos os próximos passos
-    Serial.println(F("Posição inválida"));
+    lcd.print("Posição inválida");
     return;
   }
 
-  Serial.println(F("Encoste o dedo no sensor"));
+  lcd.print("Encoste o dedo no sensor");
 
   //Espera até pegar uma imagem válida da digital
   while (fingerprintSensor.getImage() != FINGERPRINT_OK);
@@ -235,19 +306,22 @@ void storeFingerprint()
   if (fingerprintSensor.image2Tz(1) != FINGERPRINT_OK)
   {
     //Se chegou aqui deu erro, então abortamos os próximos passos
-    Serial.println(F("Erro image2Tz 1"));
+    lcd.print("Erro image2Tz 1");
+    
     return;
   }
-  
-  Serial.println(F("Tire o dedo do sensor"));
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Tire o dedo do sensor");
 
   delay(2000);
 
   //Espera até tirar o dedo
   while (fingerprintSensor.getImage() != FINGERPRINT_NOFINGER);
-
+  lcd.clear();
+  lcd.setCursor(0,0);
   //Antes de guardar precisamos de outra imagem da mesma digital
-  Serial.println(F("Encoste o mesmo dedo no sensor"));
+  lcd.print("Encoste o mesmo dedo no sensor");
 
   //Espera até pegar uma imagem válida da digital
   while (fingerprintSensor.getImage() != FINGERPRINT_OK);
@@ -255,8 +329,10 @@ void storeFingerprint()
   //Converte a imagem para o segundo padrão
   if(fingerprintSensor.image2Tz(2) != FINGERPRINT_OK)
   {
+    lcd.clear();
+  lcd.setCursor(0,0);
     //Se chegou aqui deu erro, então abortamos os próximos passos
-    Serial.println(F("Erro image2Tz 2"));
+    lcd.print("Erro image2Tz 2");
     return;
   }
 
@@ -264,26 +340,34 @@ void storeFingerprint()
   if(fingerprintSensor.createModel() != FINGERPRINT_OK)
   {
     //Se chegou aqui deu erro, então abortamos os próximos passos
-    Serial.println(F("Erro createModel"));
+    lcd.print("Erro createModel");
     return;
   }
 
   //Guarda o modelo da digital no sensor
   if(fingerprintSensor.storeModel(location) != FINGERPRINT_OK)
   {
+    lcd.clear();
+  lcd.setCursor(0,0);
     //Se chegou aqui deu erro, então abortamos os próximos passos
-    Serial.println(F("Erro storeModel"));
+    lcd.print("Erro storeModel");
     return;
   }
 
+  lcd.clear();
+  lcd.setCursor(0,0);
   //Se chegou aqui significa que todos os passos foram bem sucedidos
-  Serial.println(F("Sucesso!!!"));
+  lcd.print("Sucesso");
+  delay(3000);
+  initLCD();
 }
 
 //Verifica se a digital está cadastrada
 void checkFingerprint()
 {
-  Serial.println(F("Encoste o dedo no sensor"));
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Encoste o dedo no sensor");
 
   //Espera até pegar uma imagem válida da digital
   while (fingerprintSensor.getImage() != FINGERPRINT_OK);
@@ -291,26 +375,27 @@ void checkFingerprint()
   //Converte a imagem para o padrão que será utilizado para verificar com o banco de digitais
   if (fingerprintSensor.image2Tz() != FINGERPRINT_OK)
   {
+    lcd.clear();
+    lcd.setCursor(0,0);
     //Se chegou aqui deu erro, então abortamos os próximos passos
-    Serial.println(F("Erro image2Tz"));
+    lcd.print("Erro image2Tz");
     return;
   }
 
   //Procura por este padrão no banco de digitais
   if (fingerprintSensor.fingerFastSearch() != FINGERPRINT_OK)
   {
+    lcd.clear();
+  lcd.setCursor(0,0);
     //Se chegou aqui significa que a digital não foi encontrada
-    Serial.println(F("Digital não encontrada"));
+    lcd.print("Digital não encontrada");
     return;
   }
 
   //Se chegou aqui a digital foi encontrada
   //Mostramos a posição onde a digital estava salva e a confiança
   //Quanto mais alta a confiança melhor
-  Serial.print(F("Digital encontrada com confiança de "));
-  Serial.print(fingerprintSensor.confidence);
-  Serial.print(F(" na posição "));
-  Serial.println(fingerprintSensor.fingerID);
+  entrar(true);
 }
 
 void printStoredFingerprintsCount()
